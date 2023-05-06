@@ -7,18 +7,6 @@ from enum import Enum
 CERT_URI = "https://api.cert.tastyworks.com"
 PROD_URI = "https://api.tastyworks.com"
 
-CERT_WSS = "wss://streamer.cert.tastyworks.com"
-PROD_WSS = "wss://streamer.tastyworks.com"
-
-
-class DXEvent(Enum):
-    GREEKS = "Greeks"
-    QUOTE = "Quote"
-    TRADE = "Trade"
-    PROFILE = "Profile"
-    SUMMARY = "Summary"
-    THEORETICAL_PRICE = "TheoPrice"
-
 
 class TTApi:
     username: str = None
@@ -34,6 +22,7 @@ class TTApi:
     wss_uri: str = None
     headers: dict = {}
     user_data: dict = {}
+    is_prod: bool = False
 
     dxstreamer: any = None
 
@@ -87,10 +76,10 @@ class TTApi:
         if mfa != "":
             self.headers["X-Tastyworks-OTP"] = mfa
             self.tt_uri = PROD_URI
-            self.wss_uri = PROD_WSS
+            self.is_prod = True
         else:
             self.tt_uri = CERT_URI
-            self.wss_uri = CERT_WSS
+            self.is_prod = False
 
         response = self.__post("/sessions", body=body, headers=self.headers)
         if response is None:
@@ -115,49 +104,6 @@ class TTApi:
         self.streamer_level = response["data"]["level"]
         return True
 
-    async def connect_dxfeed(self) -> bool:
-        # !but why!
-        aiocometd.client.DEFAULT_CONNECTION_TYPE = ConnectionType.WEBSOCKET
-        auth_extension = AuthExtension(self.streamer_token)
-        self.dxfeed = Client(
-            url=self.streamer_websocket_uri,
-            connection_types=ConnectionType.WEBSOCKET,
-            auth=auth_extension,
-            ssl=False,
-        )
-        await self.dxfeed.open()
-        await self.dxfeed.subscribe("/service/data")
-        await self.dxfeed.publish("/service/sub", {"reset": True})
-        return True
-
-    async def close_dxfeed(self) -> bool:
-        await self.dxfeed.close()
-
-    async def add_dxfeed_sub(
-        self, events: list[DXEvent] = [], symbols: list[str] = []
-    ) -> bool:
-        print("Adding dxfeed subscription")
-        print(events, symbols)
-        for event in events:
-            print(f"Subscribing to {event.value}: {symbols}")
-            await self.dxfeed.publish("/service/sub", {"add": {event.value: symbols}})
-        return True
-
-    async def del_dxfeed_sub(
-        self, events: list[DXEvent] = [], symbols: list[str] = []
-    ) -> bool:
-        for event in events:
-            for symbol in symbols:
-                await self.dxfeed.publish(
-                    "/service/sub", {"remove": {event.value: symbol}}
-                )
-        return True
-
-    async def listen_dxfeed(self) -> bool:
-        async for msg in self.dxfeed:
-            print(f"dxfeed get: {msg}")
-        return True
-
     def logout(self) -> bool:
         response = self.__delete("/sessions", body={}, headers=self.headers)
         return True
@@ -179,10 +125,33 @@ class TTApi:
             self.user_data["accounts"].append(account)
         return True
 
+    def symbol_search(self, symbol) -> any:
+        response = self.__get(
+            f"/symbols/search/{symbol}", body={}, headers=self.headers
+        )
+        return response
+
+    def get_instrument_equities(self, symbol) -> any:
+        response = self.__get(
+            f"/instruments/equities/{symbol}", body={}, headers=self.headers
+        )
+        return response
+
+    def get_instrument_options(self, symbol) -> any:
+        response = self.__get(
+            f"/instruments/equity-options/{symbol}", body={}, headers=self.headers
+        )
+        return response
+
     def get_equity_options(self, symbol) -> any:
         response = self.__get(
             f"/option-chains/{symbol}/nested", body={}, headers=self.headers
         )
+        return response
+
+    def get_public_watchlists(self) -> any:
+        response = self.__get(f"/public-watchlists", body={}, headers=self.headers)
+        return response
 
     def simple_order(self, order: TTOrder = None) -> bool:
         if order is None:

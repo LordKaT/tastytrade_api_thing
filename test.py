@@ -27,8 +27,11 @@ print("Fetch dxFeed token")
 if not ttapi.fetch_dxfeed_token():
     exit()
 
+system_running = True
+
 
 async def dxfeed_client():
+    global system_running
     print("Connect dxfeed websocket")
     await ttapi.connect_dxfeed()
     print("Add dxfeed subscriptions")
@@ -44,9 +47,12 @@ async def dxfeed_client():
         ["SPY", ".SPY230508P412"],
     )
 
-    while True:
+    while system_running:
         await ttapi.listen_dxfeed()
         time.sleep(0.05)
+
+
+async def dxfeed_close():
     await ttapi.close_dxfeed()
 
 
@@ -93,23 +99,45 @@ def on_open(ws):
     ws.send(json.dumps(body))
 
 
+thread_stop = False
+ws = websocket.WebSocketApp(
+    ws_url,
+    on_message=on_message,
+    on_error=on_error,
+    on_close=on_close,
+    on_open=on_open,
+)
+
+
 def tt_client():
-    websocket.enableTrace(True)
-    ws = websocket.WebSocketApp(
-        ws_url,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-        on_open=on_open,
-    )
     ws.run_forever()
 
 
-websocket_thread = threading.Thread(target=tt_client)
-websocket_thread.start()
-websocket_thread.join()
+def dx_client():
+    asyncio.run(dxfeed_client())
 
-asyncio.run(dxfeed_client())
+
+def kill_dx_client():
+    asyncio.run(dxfeed_close())
+
+
+websocket_thread = threading.Thread(target=tt_client)
+dxfeed_thread = threading.Thread(target=dx_client)
+
+websocket_thread.start()
+dxfeed_thread.start()
+
+while system_running:
+    command = input("?").lower()
+    if command == "quit":
+        system_running = False
+        ws.close()
+        kill_dx_client()
+
+# websocket_thread.join()
+# dxfeed_thread.join()
+
+# asyncio.run(dxfeed_client())
 
 print("logout")
 if not ttapi.logout():
