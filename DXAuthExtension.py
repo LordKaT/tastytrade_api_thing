@@ -11,17 +11,12 @@ class AuthExtension(aiocometd.AuthExtension):
     async def outgoing(self, payload: Payload = None, headers: Headers = None):
         for load in payload:
             if load["channel"] == MetaChannel.CONNECT:
-                print("metachannel connect")
-                print(load)
+                continue
             if load["channel"] == MetaChannel.HANDSHAKE:
-                print("metachannel handshake")
                 load.update({"ext": {"com.devexperts.auth.AuthToken": self.token}})
-                print(load)
 
     async def incoming(self, payload: Payload = None, headers: Headers | None = None):
         pass
-        # return await super().incoming(payload, headers)
 
     async def authenticate(self) -> None:
         pass
-        # return super().authenticate()

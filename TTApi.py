@@ -1,7 +1,7 @@
-import aiocometd, asyncio, json, requests
-from aiocometd import ConnectionType, Client
+import json, requests
 from TTOrder import *
-from DXAuthExtension import AuthExtension
+
+# from DXAuthExtension import AuthExtension
 from enum import Enum
 
 CERT_URI = "https://api.cert.tastyworks.com"
