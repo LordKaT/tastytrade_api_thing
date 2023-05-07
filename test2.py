@@ -1,21 +1,15 @@
-import asyncio, configparser
+import asyncio
 from TTApi import *
+from TTConfig import *
 from TTOrder import *
 from TTWebsocket import *
 from DXFeed import *
 from datetime import datetime, timedelta
 
-config = configparser.ConfigParser()
-config.read("tt.config")
-
-tt_username = config.get("Credentials", "username")
-tt_password = config.get("Credentials", "password")
-
-ttapi = TTApi(tt_username, tt_password)
+ttapi = TTApi()
 
 print("Login")
-mfa = input("MFA: ")
-if not ttapi.login(mfa):
+if not ttapi.login():
     exit()
 
 print("Validate")
@@ -30,6 +24,9 @@ print("Fetch dxFeed token")
 if not ttapi.fetch_dxfeed_token():
     exit()
 
+print("Market Metrics")
+print(ttapi.market_metrics(["SPY", "AAPL", "/MES"]))
+
 # print(ttapi.get_equity_options("AAPL"))
 # print(ttapi.symbol_search("AAPL"))
 # print(ttapi.get_instrument_options("AAPL  250620P00195000"))
@@ -37,9 +34,9 @@ if not ttapi.fetch_dxfeed_token():
 # print("===")
 # print(ttapi.get_instrument_equities("AAPL"))
 
-# print("Websocket")
-# tt_websocket = TTWebsocket(ttapi.is_prod, ttapi.session_token)
-# tt_websocket.connect()
+print("Websocket")
+tt_websocket = TTWebsocket(ttapi.is_prod, ttapi.session_token)
+tt_websocket.connect()
 
 print("DXFeed")
 tt_dxfeed = DXFeed(ttapi.streamer_websocket_uri, ttapi.streamer_token)
@@ -62,14 +59,14 @@ async def main():
     global listen_running
     global task_list
     await tt_dxfeed.connect()
+
+    # this isn't working as expected and need to investigate why
     from_time = datetime.utcnow() - timedelta(days=6)
     to_time = datetime.utcnow()
-    from_time_str = from_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    to_time_str = to_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL{=1d}"], "10d", "1682917200000")
     # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL"])
     await tt_dxfeed.subscribe_time_series(
-        "AAPL{=1d}", from_time=1677628800000, to_time=1683331200000
+        "MPW{=1d}", from_time=1677628800000, to_time=1683331200000
     )
     while system_running:
         await tt_dxfeed.listen()
@@ -97,8 +94,7 @@ while system_running:
     command = input("?").lower()
     match command:
         case "quit":
-            # tt_websocket.disconnect()
-            # asyncio.run(tt_dxfeed.disconnect())
+            tt_websocket.disconnect()
             task_list.append({"action": "disconnect"})
             system_running = False
         case "dxfeed subscribe test":
@@ -116,13 +112,13 @@ while system_running:
                     "symbols": ["DAL"],
                 }
             )
-        # case "websocket connect":
-        # tt_websocket.send(
-        #    action="connect",
-        #    value=ttapi.user_data["accounts"][0]["account"]["account-number"],
-        # )
-        # case "websocket pws":
-        # tt_websocket.send(action="public-watchlists-subscribe")
+        case "websocket connect":
+            tt_websocket.send(
+                action="connect",
+                value=[ttapi.user_data["accounts"][0]["account"]["account-number"]],
+            )
+        case "websocket pws":
+            tt_websocket.send(action="public-watchlists-subscribe")
 
 print("logout")
 if not ttapi.logout():
