@@ -4,29 +4,30 @@ from TTOrder import *
 
 
 class TTApi:
-    username: str = None
-    password: str = None
     session_token: str = None
     remember_token: str = None
     streamer_token: str = None
     streamer_uri: str = None
     streamer_websocket_uri: str = None
     streamer_level: str = None
-    dxfeed: any = None
     tt_uri: str = None
     wss_uri: str = None
     headers: dict = {}
     user_data: dict = {}
-    is_prod: bool = False
     use_prod: bool = False
     use_mfa: bool = False
-
-    dxstreamer: any = None
 
     def __init__(self, tt_config: TTConfig = TTConfig()) -> None:
         self.headers["Content-Type"] = "application/json"
         self.headers["Accept"] = "application/json"
         self.tt_config = tt_config
+
+        if self.tt_config.use_prod:
+            self.tt_uri = self.tt_config.prod_uri
+            self.tt_wss = self.tt_config.prod_wss
+        else:
+            self.tt_uri = self.tt_config.cert_uri
+            self.tt_wss = self.tt_config.prod_wss
 
     def __post(
         self, endpoint: str = None, body: dict = {}, headers: dict = None
@@ -83,14 +84,15 @@ class TTApi:
         return None
 
     def login(self) -> bool:
-        body = {"login": self.username, "password": self.password, "remember-me": True}
+        body = {
+            "login": self.tt_config.username,
+            "password": self.tt_config.password,
+            "remember-me": True,
+        }
 
         if self.tt_config.use_mfa:
             mfa = input("MFA: ")
             self.headers["X-Tastyworks-OTP"] = mfa
-
-        if self.tt_config.use_prod:
-            self.tt_uri = self.tt_config.prod_uri
 
         response = self.__post("/sessions", body=body)
         if response is None:

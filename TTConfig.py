@@ -12,7 +12,7 @@ class TTConfig:
     cert_wss: str = None
     prod_wss: str = None
 
-    def __init__(self, path: str = "./", filename: str = "tt.config") -> None:
+    def __init__(self, path: str = ".", filename: str = "tt.config") -> None:
         self.config.read(f"{path}/{filename}")
         self.use_prod = self.config.get("Config", "use_prod")
         self.use_mfa = self.config.get("Config", "use_mfa")

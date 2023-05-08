@@ -1,8 +1,5 @@
 import json, threading, time, websocket
 
-CERT_WSS = "wss://streamer.cert.tastyworks.com"
-PROD_WSS = "wss://streamer.tastyworks.com"
-
 
 class TTWebsocket:
     socket: websocket.WebSocketApp = None
@@ -13,11 +10,8 @@ class TTWebsocket:
     heartbeat_thread: threading.Thread = None
     active: bool = False
 
-    def __init__(self, is_prod: bool = False, auth_token: str = None) -> None:
-        if is_prod:
-            self.uri = PROD_WSS
-        else:
-            self.uri = CERT_WSS
+    def __init__(self, uri: str = None, auth_token: str = None) -> None:
+        self.uri = uri
         self.auth_token = auth_token
         self.body["auth-token"] = self.auth_token
 

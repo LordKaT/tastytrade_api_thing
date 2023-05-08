@@ -1,18 +1,15 @@
-import asyncio, configparser, threading, time, websocket
-from TTApi import DXEvent, TTApi
+import asyncio
+from TTApi import *
+from TTConfig import *
 from TTOrder import *
+from TTWebsocket import *
+from DXFeed import *
+from datetime import datetime, timedelta
 
-config = configparser.ConfigParser()
-config.read("tt.config")
-
-tt_username = config.get("Credentials", "username")
-tt_password = config.get("Credentials", "password")
-
-ttapi = TTApi(tt_username, tt_password)
+ttapi = TTApi()
 
 print("Login")
-mfa = input("MFA: ")
-if not ttapi.login(mfa):
+if not ttapi.login():
     exit()
 
 print("Validate")
@@ -27,117 +24,101 @@ print("Fetch dxFeed token")
 if not ttapi.fetch_dxfeed_token():
     exit()
 
+print("Market Metrics")
+print(ttapi.market_metrics(["SPY", "AAPL", "/MES"]))
+
+# print(ttapi.get_equity_options("AAPL"))
+# print(ttapi.symbol_search("AAPL"))
+# print(ttapi.get_instrument_options("AAPL  250620P00195000"))
+# print(ttapi.get_public_watchlists())
+# print("===")
+# print(ttapi.get_instrument_equities("AAPL"))
+
+print("Websocket")
+tt_websocket = TTWebsocket(uri=ttapi.tt_wss, auth_token=ttapi.session_token)
+tt_websocket.connect()
+
+print("DXFeed")
+tt_dxfeed = DXFeed(uri=ttapi.streamer_websocket_uri, auth_token=ttapi.streamer_token)
+
 system_running = True
+listen_running = False
 
 
-async def dxfeed_client():
+def listen_cleanup(task):
+    global listen_running
+    listen_running = False
+    task.done()
+
+
+task_list = []
+
+
+async def main():
     global system_running
-    print("Connect dxfeed websocket")
-    await ttapi.connect_dxfeed()
-    print("Add dxfeed subscriptions")
-    await ttapi.add_dxfeed_sub(
-        [
-            DXEvent.GREEKS,
-            DXEvent.QUOTE,
-            DXEvent.TRADE,
-            DXEvent.PROFILE,
-            DXEvent.SUMMARY,
-            DXEvent.THEORETICAL_PRICE,
-        ],
-        ["SPY", ".SPY230508P412"],
+    global listen_running
+    global task_list
+    await tt_dxfeed.connect()
+
+    # this isn't working as expected and need to investigate why
+    from_time = datetime.utcnow() - timedelta(days=6)
+    to_time = datetime.utcnow()
+    # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL{=1d}"], "10d", "1682917200000")
+    # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL"])
+    await tt_dxfeed.subscribe_time_series(
+        "MPW{=1d}", from_time=1677628800000, to_time=1683331200000
     )
-
     while system_running:
-        await ttapi.listen_dxfeed()
-        time.sleep(0.05)
+        await tt_dxfeed.listen()
+        if len(task_list) > 0:
+            for task in task_list:
+                if task["action"] == "subscribe":
+                    await tt_dxfeed.subscribe(task["events"], task["symbols"])
+                elif task["action"] == "disconnect":
+                    await tt_dxfeed.disconnect()
+                task_list.remove(task)
 
 
-async def dxfeed_close():
-    await ttapi.close_dxfeed()
+async_loop_main = asyncio.new_event_loop()
 
 
-# order = TTOrder(TTTimeInForce.GTC, 0.25, TTPriceEffect.CREDIT, TTOrderType.LIMIT)
-# option = TTOption('MPW', '230721', TTOptionSide.PUT, 6.00)
-# order.add_leg(TTInstrumentType.EQUITY_OPTION, option.symbol, 1, TTLegAction.STO)
-# option = TTOption('MPW', '230721', TTOptionSide.CALL, 5.00)
-# order.add_leg(TTInstrumentType.EQUITY_OPTION, option.symbol, 1, TTLegAction.BTO)
-
-# ttapi.simple_order(order)
-
-print("Websocket stuff")
-ws_url = "wss://streamer.cert.tastyworks.com"
-# ws_url = 'wss://streamer.tastyworks.com'
-
-body = {"auth-token": ttapi.session_token, "action": "", "value": ""}
+def start_loop(loop, routine):
+    asyncio.run(routine())
 
 
-def on_message(ws, message):
-    print(f"wss get {message}")
+async_thread_main = threading.Thread(target=start_loop, args=(async_loop_main, main))
+async_thread_main.start()
 
-
-def on_error(ws, error):
-    print(f"wss error: {error}")
-
-
-def on_close(ws, status_code, message):
-    print(f"wss close: {status_code} {message}")
-
-
-def on_open(ws):
-    print(f"wss open")
-
-    body["action"] = "heartbeat"
-    body["value"] = ""
-    ws.send(json.dumps(body))
-
-    body["action"] = "public-watchlists-subscribe"
-    body["value"] = ""
-    ws.send(json.dumps(body))
-
-    body["action"] = "connect"
-    body["value"] = [f'{ttapi.user_data["accounts"][0]["account"]["account-number"]}']
-    ws.send(json.dumps(body))
-
-
-thread_stop = False
-ws = websocket.WebSocketApp(
-    ws_url,
-    on_message=on_message,
-    on_error=on_error,
-    on_close=on_close,
-    on_open=on_open,
-)
-
-
-def tt_client():
-    ws.run_forever()
-
-
-def dx_client():
-    asyncio.run(dxfeed_client())
-
-
-def kill_dx_client():
-    asyncio.run(dxfeed_close())
-
-
-websocket_thread = threading.Thread(target=tt_client)
-dxfeed_thread = threading.Thread(target=dx_client)
-
-websocket_thread.start()
-dxfeed_thread.start()
 
 while system_running:
     command = input("?").lower()
-    if command == "quit":
-        system_running = False
-        ws.close()
-        kill_dx_client()
-
-# websocket_thread.join()
-# dxfeed_thread.join()
-
-# asyncio.run(dxfeed_client())
+    match command:
+        case "quit":
+            tt_websocket.disconnect()
+            task_list.append({"action": "disconnect"})
+            system_running = False
+        case "dxfeed subscribe test":
+            task_list.append(
+                {
+                    "action": "subscribe",
+                    "events": [DXEvent.SUMMARY],
+                    "symbols": ["MPW"],
+                }
+            )
+            task_list.append(
+                {
+                    "action": "subscribe",
+                    "events": [DXEvent.QUOTE],
+                    "symbols": ["DAL"],
+                }
+            )
+        case "websocket connect":
+            tt_websocket.send(
+                action="connect",
+                value=[ttapi.user_data["accounts"][0]["account"]["account-number"]],
+            )
+        case "websocket pws":
+            tt_websocket.send(action="public-watchlists-subscribe")
 
 print("logout")
 if not ttapi.logout():
