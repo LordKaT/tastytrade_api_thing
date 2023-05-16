@@ -1,0 +1,18 @@
+# rename this file to TastyBot.confg
+[Discord]
+token=YOUR_DISCORD_API_TOKEN
+channel=YOUR_DISCORD_CHANNEL_ID
+debug_channel=YOUR_DISCORD_DEBUG_CHANNEL_ID
+
+# Configure your IVR alert levels
+[IVR Levels]
+elevated=20
+tasty=35
+extreme=50
+
+
+# Bugged, currently unused.
+[IVR Symbology]
+unch=•
+down=↓
+up=↑

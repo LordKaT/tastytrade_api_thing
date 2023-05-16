@@ -1,0 +1,5 @@
+aiocometd==0.4.5
+discord.py==2.2.3
+Requests==2.30.0
+tastyworks_aiocometd==1.0
+websocket_client==1.5.1

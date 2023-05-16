@@ -1,9 +1,9 @@
 import asyncio
-from TTApi import *
-from TTConfig import *
-from TTOrder import *
-from TTWebsocket import *
-from DXFeed import *
+from lib.TTApi import *
+from lib.TTConfig import *
+from lib.TTOrder import *
+from lib.TTWebsocket import *
+from lib.DXFeed import *
 from datetime import datetime, timedelta
 
 ttapi = TTApi()
@@ -24,8 +24,8 @@ print("Fetch dxFeed token")
 if not ttapi.fetch_dxfeed_token():
     exit()
 
-print("Market Metrics")
-print(ttapi.market_metrics(["SPY", "AAPL", "/MES"]))
+# print("Market Metrics")
+# print(ttapi.market_metrics(["SPY", "AAPL", "/MES"]))
 
 # print(ttapi.get_equity_options("AAPL"))
 # print(ttapi.symbol_search("AAPL"))
@@ -42,21 +42,11 @@ print("DXFeed")
 tt_dxfeed = DXFeed(uri=ttapi.streamer_websocket_uri, auth_token=ttapi.streamer_token)
 
 system_running = True
-listen_running = False
-
-
-def listen_cleanup(task):
-    global listen_running
-    listen_running = False
-    task.done()
-
-
 task_list = []
 
 
 async def main():
     global system_running
-    global listen_running
     global task_list
     await tt_dxfeed.connect()
 
@@ -64,9 +54,9 @@ async def main():
     from_time = datetime.utcnow() - timedelta(days=6)
     to_time = datetime.utcnow()
     # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL{=1d}"], "10d", "1682917200000")
-    # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL"])
+    # await tt_dxfeed.subscribe([DXEvent.QUOTE], ["SPY"])
     await tt_dxfeed.subscribe_time_series(
-        "MPW{=1d}", from_time=1677628800000, to_time=1683331200000
+        "TSLA", from_time=1677628800000, to_time=1683331200000
     )
     while system_running:
         await tt_dxfeed.listen()
