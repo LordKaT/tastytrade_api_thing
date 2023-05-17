@@ -54,7 +54,7 @@ class TastyCommands(commands.Cog):
             await self.bot.update_alerts(only_new=False)
         else:
             await self.bot.update_alerts(only_new=True)
-        await self.bot.debug(self.bot.alert_message)
+        await self.bot.send(self.bot.alert_message)
 
     @commands.command(brief="Displays the current TastyBot watchlist.")
     @commands.cooldown(1, 300, commands.BucketType.user)
@@ -64,7 +64,7 @@ class TastyCommands(commands.Cog):
             watchlist_message += f"{entry['symbol']}, "
         watchlist_message = watchlist_message[:-2]
         watchlist_message += "```"
-        await self.bot.debug(watchlist_message)
+        await self.bot.send(watchlist_message)
 
     @tasks.loop(minutes=2.50)
     async def fetch_loop(self):
@@ -84,10 +84,10 @@ class TastyCommands(commands.Cog):
             if now.minute % 15 == 0 or self.first_run:
                 self.first_run = False
                 await self.bot.update_alerts(only_new=False)
-                await self.bot.debug(self.bot.alert_message)
+                await self.bot.send(self.bot.alert_message)
             elif now.minute % 5 == 0:
                 await self.bot.update_alerts(only_new=True)
-                await self.bot.debug(self.bot.alert_message)
+                await self.bot.send(self.bot.alert_message)
 
     @fetch_loop.before_loop
     async def before_fetch_loop(self):

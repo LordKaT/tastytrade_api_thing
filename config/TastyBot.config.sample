@@ -3,6 +3,7 @@
 token=YOUR_DISCORD_API_TOKEN
 channel=YOUR_DISCORD_CHANNEL_ID
 debug_channel=YOUR_DISCORD_DEBUG_CHANNEL_ID
+watchlist=Machines
 
 # Configure your IVR alert levels
 [IVR Levels]

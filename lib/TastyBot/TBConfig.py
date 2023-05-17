@@ -6,6 +6,7 @@ class TBConfig:
     discord_token: str = None
     discord_channel: int = None
     discord_debug_channel: int = None
+    watchlist: str = None
 
     ivr_elevated: int = 20
     ivr_tasty: int = 35
@@ -22,6 +23,7 @@ class TBConfig:
         self.discord_token = self.config.get("Discord", "token")
         self.discord_channel = int(self.config.get("Discord", "channel"))
         self.discord_debug_channel = int(self.config.get("Discord", "debug_channel"))
+        self.watchlist = self.config.get("Discord", "watchlist")
         self.ivr_elevated = int(self.config.get("IVR Levels", "elevated"))
         self.ivr_tasty = int(self.config.get("IVR Levels", "tasty"))
         self.ivr_extreme = int(self.config.get("IVR Levels", "extreme"))

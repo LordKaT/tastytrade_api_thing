@@ -50,7 +50,7 @@ class TastyBot(commands.Bot):
         print(args[0])
 
     async def fetch_watchlist(self):
-        self.watchlist = self.ttapi.get_watchlists("Machines")
+        self.watchlist = self.ttapi.get_watchlists(self.tbconfig.watchlist)
         metrics_list = []
         for entry in self.watchlist["data"]["watchlist-entries"]:
             self.fetch_symbols[entry["symbol"]] = entry
