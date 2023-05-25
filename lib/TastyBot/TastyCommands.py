@@ -54,7 +54,8 @@ class TastyCommands(commands.Cog):
             await self.bot.update_alerts(only_new=False)
         else:
             await self.bot.update_alerts(only_new=True)
-        await self.bot.send(self.bot.alert_message)
+        for message in self.bot.alert_messages:
+            await self.bot.send(message)
 
     @commands.command(brief="Displays the current TastyBot watchlist.")
     @commands.cooldown(1, 300, commands.BucketType.user)

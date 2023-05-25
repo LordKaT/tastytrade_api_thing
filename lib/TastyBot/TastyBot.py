@@ -51,11 +51,27 @@ class TastyBot(commands.Bot):
 
     async def fetch_watchlist(self):
         self.watchlist = self.ttapi.get_watchlists(self.tbconfig.watchlist)
+        self.metrics = {"data": {"items": []}}
         metrics_list = []
         for entry in self.watchlist["data"]["watchlist-entries"]:
             self.fetch_symbols[entry["symbol"]] = entry
             metrics_list.append(entry["symbol"])
-        self.metrics = self.ttapi.market_metrics(metrics_list)
+        for i in range(0, len(metrics_list), 10):
+            metric = []
+            for j in range(i, i + 10):
+                if j < len(metrics_list):
+                    metric.append(metrics_list[j])
+            # print(f"{metric}")
+            # self.metrics["data"]["items"].append(
+            #    self.ttapi.market_metrics(metric)["data"]["items"][0]
+            # )
+            mm = self.ttapi.market_metrics(metric)["data"]["items"]
+            self.metrics["data"]["items"].extend(mm)
+            # print(self.ttapi.market_metrics(metric)["data"]["items"][0])
+            # print(self.metrics["data"]["items"])
+            # time.sleep(0.25)
+        # print(self.metrics)
+        # exit()
 
     async def update_watchlist(self):
         for item in self.metrics["data"]["items"]:
@@ -136,47 +152,57 @@ class TastyBot(commands.Bot):
             }
 
     async def update_alerts(self, only_new: bool = False):
-        ivr_symbol = "•"
-        status_symbol = "•"
-        has_updates = False
-        self.alert_message = self.alert_message_header
-        for symbol, data in self.alertlist.items():
-            if data["prev_ivr"] is None:
-                ivr_symbol = "¤"
-            elif data["prev_ivr"] == data["ivr"] and only_new:
-                continue
-            elif data["prev_ivr"] == data["ivr"]:
-                ivr_symbol = "•"
-            elif data["prev_ivr"] < data["ivr"]:
-                ivr_symbol = "↓"
-            elif data["prev_ivr"] > data["ivr"]:
-                ivr_symbol = "↑"
-            if data["prev_status"] != data["status"] and data["prev_ivr"] is not None:
-                status_symbol = ivr_symbol
-            has_updates = True
-            status = ""
-            if data["status"] == "Extreme":
-                status = "\u001b[1;37m\u001b[0;41mExtreme\u001b[0m "
-            elif data["status"] == "Tasty":
-                status = "\u001b[1;35mTasty\u001b[0m   "
-            elif data["status"] == "Elevated":
-                status = "\u001b[1;34mElevated\u001b[0m"
-            symbol_padded = symbol.ljust(7)
-            ivr_diff = round(
-                (data["ivr"] - data["ivr_open"]) / data["ivr_open"] * 100,
-                2,
-            )
-            ivr_color = "30"
-            if ivr_diff < 0:
-                ivr_color = "31"
-            elif ivr_diff > 0:
-                ivr_color = "32"
-            ivr_diff = f"{str(ivr_diff)}% {ivr_symbol}".ljust(11, " ")
-            self.alert_message += (
-                f"{status_symbol}{status}  {symbol_padded} "
-                f"\u001b[0;{ivr_color}m{ivr_diff}\u001b[0m "
-                f"{data['liquidity']}\n"
-            )
-        if not has_updates:
-            self.alert_message += "No alerts\n"
-        self.alert_message += self.alert_message_footer
+        self.alert_messages = []
+        keys = list(self.alertlist.keys())
+        for i in range(0, len(keys), 10):
+            ivr_symbol = "•"
+            status_symbol = "•"
+            has_updates = False
+            self.alert_message = self.alert_message_header
+            for j in range(i, i + 10):
+                if j >= len(keys):
+                    break
+                data = self.alertlist[keys[j]]
+                if data["prev_ivr"] is None:
+                    ivr_symbol = "¤"
+                elif data["prev_ivr"] == data["ivr"] and only_new:
+                    continue
+                elif data["prev_ivr"] == data["ivr"]:
+                    ivr_symbol = "•"
+                elif data["prev_ivr"] < data["ivr"]:
+                    ivr_symbol = "↑"
+                elif data["prev_ivr"] > data["ivr"]:
+                    ivr_symbol = "↓"
+                if (
+                    data["prev_status"] != data["status"]
+                    and data["prev_ivr"] is not None
+                ):
+                    status_symbol = ivr_symbol
+                has_updates = True
+                status = ""
+                if data["status"] == "Extreme":
+                    status = "\u001b[1;37m\u001b[0;41mExtreme\u001b[0m "
+                elif data["status"] == "Tasty":
+                    status = "\u001b[1;35mTasty\u001b[0m   "
+                elif data["status"] == "Elevated":
+                    status = "\u001b[1;34mElevated\u001b[0m"
+                # symbol_padded = symbol.ljust(7)
+                symbol_padded = keys[j].ljust(7)
+                ivr_diff = round(
+                    (data["ivr"] - data["ivr_open"]) / data["ivr_open"] * 100,
+                    2,
+                )
+                ivr_color = "30"
+                if ivr_diff < 0:
+                    ivr_color = "31"
+                elif ivr_diff > 0:
+                    ivr_color = "32"
+                ivr_diff = f"{str(ivr_diff)}% {ivr_symbol}".ljust(11, " ")
+                self.alert_message += (
+                    f"{status_symbol}{status}  {symbol_padded} "
+                    f"\u001b[0;{ivr_color}m{ivr_diff}\u001b[0m "
+                    f"{data['liquidity']}\n"
+                )
+            self.alert_message += self.alert_message_footer
+            if has_updates:
+                self.alert_messages.append(self.alert_message)
