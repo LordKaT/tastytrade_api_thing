@@ -154,12 +154,12 @@ class TastyBot(commands.Bot):
     async def update_alerts(self, only_new: bool = False):
         self.alert_messages = []
         keys = list(self.alertlist.keys())
-        for i in range(0, len(keys), 10):
+        for i in range(0, len(keys), 5):
             ivr_symbol = "•"
             status_symbol = "•"
             has_updates = False
             self.alert_message = self.alert_message_header
-            for j in range(i, i + 10):
+            for j in range(i, i + 5):
                 if j >= len(keys):
                     break
                 data = self.alertlist[keys[j]]
@@ -186,7 +186,6 @@ class TastyBot(commands.Bot):
                     status = "\u001b[1;35mTasty\u001b[0m   "
                 elif data["status"] == "Elevated":
                     status = "\u001b[1;34mElevated\u001b[0m"
-                # symbol_padded = symbol.ljust(7)
                 symbol_padded = keys[j].ljust(7)
                 ivr_diff = round(
                     (data["ivr"] - data["ivr_open"]) / data["ivr_open"] * 100,

@@ -1,5 +1,5 @@
 import discord
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import Any, List, Mapping, Optional
 from discord.ext import commands, tasks
 from discord.ext.commands.cog import Cog
@@ -56,6 +56,7 @@ class TastyCommands(commands.Cog):
             await self.bot.update_alerts(only_new=True)
         for message in self.bot.alert_messages:
             await self.bot.send(message)
+            time.sleep(0.5)
 
     @commands.command(brief="Displays the current TastyBot watchlist.")
     @commands.cooldown(1, 300, commands.BucketType.user)
