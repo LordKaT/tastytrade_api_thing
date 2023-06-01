@@ -56,9 +56,9 @@ class TastyBot(commands.Bot):
         for entry in self.watchlist["data"]["watchlist-entries"]:
             self.fetch_symbols[entry["symbol"]] = entry
             metrics_list.append(entry["symbol"])
-        for i in range(0, len(metrics_list), 10):
+        for i in range(0, len(metrics_list), 5):
             metric = []
-            for j in range(i, i + 10):
+            for j in range(i, i + 5):
                 if j < len(metrics_list):
                     metric.append(metrics_list[j])
             # print(f"{metric}")
@@ -67,6 +67,7 @@ class TastyBot(commands.Bot):
             # )
             mm = self.ttapi.market_metrics(metric)["data"]["items"]
             self.metrics["data"]["items"].extend(mm)
+            time.sleep(0.5)
             # print(self.ttapi.market_metrics(metric)["data"]["items"][0])
             # print(self.metrics["data"]["items"])
             # time.sleep(0.25)
