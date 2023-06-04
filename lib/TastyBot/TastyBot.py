@@ -27,6 +27,13 @@ class TastyBot(commands.Bot):
         self.alert_message_header += " Status    Symbol  IVR Change  Liquidity\n"
         self.alert_message_footer = "```"
 
+        # print(f"Waiting... ", end="", flush=True)
+        # now = datetime.now()
+        # while now.minute % 5 != 0 or now.second != 0:
+        #    now = datetime.now()
+        # now = datetime.now().strftime("%H:%M:%S")
+        # print(f"Ready {now}", flush=True)
+
         intents = discord.Intents.default()
         intents.message_content = True
 
@@ -40,7 +47,7 @@ class TastyBot(commands.Bot):
         await self.get_channel(self.tbconfig.discord_debug_channel).send(msg)
 
     async def on_ready(self):
-        print(f"{self.user.name} connected")
+        print(f"{self.user.name} connected.")
         self.tasty_cog = TastyCommands(self)
         await self.add_cog(self.tasty_cog)
         self.tasty_cog.start_tasks()
@@ -50,15 +57,17 @@ class TastyBot(commands.Bot):
         print(args[0])
 
     async def fetch_watchlist(self):
+        now = datetime.now().strftime("%H:%M:%S")
+        print(f"Fetching watchlist {now}... ", end="", flush=True)
         self.watchlist = self.ttapi.get_watchlists(self.tbconfig.watchlist)
         self.metrics = {"data": {"items": []}}
         metrics_list = []
         for entry in self.watchlist["data"]["watchlist-entries"]:
             self.fetch_symbols[entry["symbol"]] = entry
             metrics_list.append(entry["symbol"])
-        for i in range(0, len(metrics_list), 5):
+        for i in range(0, len(metrics_list), 10):
             metric = []
-            for j in range(i, i + 5):
+            for j in range(i, i + 10):
                 if j < len(metrics_list):
                     metric.append(metrics_list[j])
             # print(f"{metric}")
@@ -67,14 +76,17 @@ class TastyBot(commands.Bot):
             # )
             mm = self.ttapi.market_metrics(metric)["data"]["items"]
             self.metrics["data"]["items"].extend(mm)
-            time.sleep(0.5)
             # print(self.ttapi.market_metrics(metric)["data"]["items"][0])
             # print(self.metrics["data"]["items"])
             # time.sleep(0.25)
+        now = datetime.now().strftime("%H:%M:%S")
+        print(f"Fetch complete {now}", flush=True)
         # print(self.metrics)
         # exit()
 
     async def update_watchlist(self):
+        now = datetime.now().strftime("%H:%M:%S")
+        print(f"Updating watchlist {now}... ", end="", flush=True)
         for item in self.metrics["data"]["items"]:
             symbol = item["symbol"]
 
@@ -123,6 +135,8 @@ class TastyBot(commands.Bot):
                 "ivr_open": ivr if now <= target else prev_ivr_open,
                 "liquidity": liquidity,
             }
+        now = datetime.now().strftime("%H:%M:%S")
+        print(f"Update complete {now}", flush=True)
 
     async def update_alertlist(self):
         for symbol, data in self.symbols.items():

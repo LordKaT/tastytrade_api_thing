@@ -22,6 +22,15 @@ class TastyCommands(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
+    async def send_alerts(self):
+        now = datetime.now().strftime("%H:%M:%S")
+        print(f"Sending alerts {now} ... ", end="", flush=True)
+        for message in self.bot.alert_messages:
+            await self.bot.send(message)
+            time.sleep(0.25)
+        now = datetime.now().strftime("%H:%M:%S")
+        print(f"Finished alerts {now}", flush=True)
+
     @commands.command(brief="Read this to understand the watchlist posts.")
     @commands.cooldown(1, 300, commands.BucketType.user)
     async def README(self, ctx):
@@ -55,9 +64,7 @@ class TastyCommands(commands.Cog):
             await self.bot.update_alerts(only_new=False)
         else:
             await self.bot.update_alerts(only_new=True)
-        for message in self.bot.alert_messages:
-            await self.bot.send(message)
-            time.sleep(0.5)
+        await self.send_alerts()
 
     @commands.command(brief="Displays the current TastyBot watchlist.")
     @commands.cooldown(1, 300, commands.BucketType.user)
@@ -69,28 +76,41 @@ class TastyCommands(commands.Cog):
         watchlist_message += "```"
         await self.bot.send(watchlist_message)
 
-    @tasks.loop(minutes=2.50)
+    @tasks.loop(seconds=1.00)
     async def fetch_loop(self):
-        if datetime.today().weekday() in [5, 6]:  # It's the weekend, ignore
-            return
+        # if datetime.today().weekday() in [5, 6]:  # It's the weekend, ignore
+        #    return
+
         now = datetime.now()
+        if now.minute % 2 != 0 or now.second != 0:
+            return
+
         if now.hour >= 9 and now.hour <= 16:
             if now.hour == 9 and now.minute < 30:
                 return
-            if now.hour == 16 and now.minute > 15:
+            if now.hour == 19 and now.minute > 0:
                 return
+
+            now = datetime.now().strftime("%H:%M:%S")
+            print(f"Entering fetch_loop {now}", flush=True)
 
             await self.bot.fetch_watchlist()
             await self.bot.update_watchlist()
             await self.bot.update_alertlist()
 
-            if now.minute % 15 == 0 or self.first_run:
+            if self.first_run:
                 self.first_run = False
                 await self.bot.update_alerts(only_new=False)
-                await self.bot.send(self.bot.alert_message)
-            elif now.minute % 5 == 0:
-                await self.bot.update_alerts(only_new=True)
-                await self.bot.send(self.bot.alert_message)
+            else:
+                now = datetime.now()
+                if now.minute % 30 == 0:
+                    await self.bot.update_alerts(only_new=False)
+                else:
+                    await self.bot.update_alerts(only_new=True)
+            await self.send_alerts()
+
+            now = datetime.now().strftime("%H:%M:%S")
+            print(f"Exiting fetch_loop {now}", flush=True)
 
     @fetch_loop.before_loop
     async def before_fetch_loop(self):
