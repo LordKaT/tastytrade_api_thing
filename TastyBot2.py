@@ -17,4 +17,11 @@ if not ttapi.fetch_accounts():
     print("fetch accounts failed")
     exit()
 
+for account in ttapi.user_data["accounts"]:
+    if not ttapi.fetch_positions(account["account-number"]):
+        print(f"{account['account-number']}: fetch position failed")
+        exit()
+
+print(ttapi.user_data["account_positions"])
+
 tb = TastyBot(ttapi)

@@ -143,7 +143,24 @@ class TTApi:
 
         self.user_data["accounts"] = []
         for account in response["data"]["items"]:
-            self.user_data["accounts"].append(account)
+            self.user_data["accounts"].append(account["account"])
+
+        return True
+
+    def fetch_positions(self, account: str = "") -> bool:
+        if account == "":
+            return False
+
+        response = self.__get(f"/accounts/{account}/positions")
+
+        if response is None:
+            return False
+
+        if "account_positions" not in self.user_data:
+            self.user_data["account_positions"] = []
+
+        for position in response["data"]["items"]:
+            self.user_data["account_positions"].append(position["symbol"].split()[0])
 
         return True
 

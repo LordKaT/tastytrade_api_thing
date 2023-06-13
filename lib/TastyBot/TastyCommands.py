@@ -78,17 +78,18 @@ class TastyCommands(commands.Cog):
 
     @tasks.loop(seconds=1.00)
     async def fetch_loop(self):
-        # if datetime.today().weekday() in [5, 6]:  # It's the weekend, ignore
-        #    return
+        if datetime.today().weekday() in [5, 6]:  # It's the weekend, ignore
+            return
 
+        # only run every 2 minutes-ish
         now = datetime.now()
         if now.minute % 2 != 0 or now.second != 0:
             return
 
-        if now.hour >= 9 and now.hour <= 16:
+        if now.hour >= 9 and now.hour <= 19:
             if now.hour == 9 and now.minute < 30:
                 return
-            if now.hour == 19 and now.minute > 0:
+            elif now.hour == 19 and now.minute > 0:
                 return
 
             now = datetime.now().strftime("%H:%M:%S")
@@ -103,10 +104,10 @@ class TastyCommands(commands.Cog):
                 await self.bot.update_alerts(only_new=False)
             else:
                 now = datetime.now()
-                if now.minute % 30 == 0:
-                    await self.bot.update_alerts(only_new=False)
-                else:
-                    await self.bot.update_alerts(only_new=True)
+                # if now.minute % 30 == 0:
+                #    await self.bot.update_alerts(only_new=False)
+                # else:
+                await self.bot.update_alerts(only_new=True)
             await self.send_alerts()
 
             now = datetime.now().strftime("%H:%M:%S")

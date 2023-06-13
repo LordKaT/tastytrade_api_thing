@@ -24,7 +24,7 @@ class TastyBot(commands.Bot):
     def __init__(self, ttapi: TTApi = None) -> None:
         self.ttapi = ttapi
         self.alert_message_header = "```ansi\n\u001b[1;30mIVR Alert List\u001b[0m\n"
-        self.alert_message_header += " Status    Symbol  IVR Change  Liquidity\n"
+        self.alert_message_header += "  Status    Symbol  IVR Change  Liquidity\n"
         self.alert_message_footer = "```"
 
         # print(f"Waiting... ", end="", flush=True)
@@ -70,19 +70,10 @@ class TastyBot(commands.Bot):
             for j in range(i, i + 10):
                 if j < len(metrics_list):
                     metric.append(metrics_list[j])
-            # print(f"{metric}")
-            # self.metrics["data"]["items"].append(
-            #    self.ttapi.market_metrics(metric)["data"]["items"][0]
-            # )
             mm = self.ttapi.market_metrics(metric)["data"]["items"]
             self.metrics["data"]["items"].extend(mm)
-            # print(self.ttapi.market_metrics(metric)["data"]["items"][0])
-            # print(self.metrics["data"]["items"])
-            # time.sleep(0.25)
         now = datetime.now().strftime("%H:%M:%S")
         print(f"Fetch complete {now}", flush=True)
-        # print(self.metrics)
-        # exit()
 
     async def update_watchlist(self):
         now = datetime.now().strftime("%H:%M:%S")
@@ -177,6 +168,7 @@ class TastyBot(commands.Bot):
             for j in range(i, i + 5):
                 if j >= len(keys):
                     break
+                position_symbol = " "
                 data = self.alertlist[keys[j]]
                 if data["prev_ivr"] is None:
                     ivr_symbol = "¤"
@@ -188,11 +180,14 @@ class TastyBot(commands.Bot):
                     ivr_symbol = "↑"
                 elif data["prev_ivr"] > data["ivr"]:
                     ivr_symbol = "↓"
+                    continue  # TODO: remove if wanting all alerts
                 if (
                     data["prev_status"] != data["status"]
                     and data["prev_ivr"] is not None
                 ):
                     status_symbol = ivr_symbol
+                if keys[j] in self.ttapi.user_data["account_positions"]:
+                    position_symbol = "\u001b[1;33m►\u001b[0m"
                 has_updates = True
                 status = ""
                 if data["status"] == "Extreme":
@@ -213,7 +208,7 @@ class TastyBot(commands.Bot):
                     ivr_color = "32"
                 ivr_diff = f"{str(ivr_diff)}% {ivr_symbol}".ljust(11, " ")
                 self.alert_message += (
-                    f"{status_symbol}{status}  {symbol_padded} "
+                    f"{position_symbol}{status_symbol}{status}  {symbol_padded} "
                     f"\u001b[0;{ivr_color}m{ivr_diff}\u001b[0m "
                     f"{data['liquidity']}\n"
                 )
