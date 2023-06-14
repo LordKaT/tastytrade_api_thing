@@ -66,6 +66,13 @@ class TastyCommands(commands.Cog):
             await self.bot.update_alerts(only_new=True)
         await self.send_alerts()
 
+    @commands.command(administrator=True, hidden=True)
+    async def chain(self, ctx, *params):
+        if len(params) < 1:
+            return
+        symbol, *extra_params = params
+        print(self.bot.ttapi.option_chains(symbol))
+
     @commands.command(brief="Displays the current TastyBot watchlist.")
     @commands.cooldown(1, 300, commands.BucketType.user)
     async def watchlist(self, ctx):

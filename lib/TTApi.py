@@ -170,6 +170,12 @@ class TTApi:
         response = self.__get(f"/market-metrics", params=query)
         return response
 
+    def option_chains(self, symbol: str = "") -> any:
+        response = self.__get(f"/option-chains/{symbol}/nested")
+        if response is None:
+            return False
+        return response
+
     def symbol_search(self, symbol) -> any:
         response = self.__get(f"/symbols/search/{symbol}")
         return response

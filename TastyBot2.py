@@ -22,6 +22,4 @@ for account in ttapi.user_data["accounts"]:
         print(f"{account['account-number']}: fetch position failed")
         exit()
 
-print(ttapi.user_data["account_positions"])
-
 tb = TastyBot(ttapi)
