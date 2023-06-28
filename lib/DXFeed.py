@@ -60,6 +60,21 @@ class DXFeed:
         self.active = False
         await self.streamer.close()
 
+    async def data(
+        self,
+        events: list[DXEvent] = [],
+        symbols: list[str] = [],
+    ) -> bool:
+        for event in events:
+            print(f"Data for {event.value}: {symbols}")
+            body = {}
+            body[event.value] = symbols
+            await self.streamer.publish(
+                DXService.DATA.value,
+                {DXAction.ADD: {event.value: symbols}},
+            )
+        return True
+
     async def subscribe(
         self,
         events: list[DXEvent] = [],
@@ -109,7 +124,8 @@ class DXFeed:
                     if msg["channel"] != DXService.DATA:
                         print(f"dxfeed other {msg}")
                         continue
-                    print(f"dxfeed get {msg}")
+                    return msg["data"]
+                    # print(f"dxfeed get {msg}")
                 return True
         except asyncio.TimeoutError:
             return True

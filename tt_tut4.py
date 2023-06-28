@@ -83,16 +83,8 @@ async def main():
 
     await tt_dxfeed.connect()
 
-    # this isn't working as expected and need to investigate why
-    # from_time = datetime.utcnow() - timedelta(days=6)
-    # to_time = datetime.utcnow()
-    # await tt_dxfeed.subscribe([DXEvent.CANDLE], ["AAPL{=1d}"], "10d", "1682917200000")
     await tt_dxfeed.subscribe([DXEvent.SUMMARY, DXEvent.TRADE], ["MSFT"])
-    #await tt_dxfeed.subscribe([DXEvent.QUOTE, DXEvent.SUMMARY], [".AAPL230721P187.5"])
-    #await tt_dxfeed.subscribe([DXEvent.QUOTE, DXEvent.SUMMARY], [".MSFT230818P340"])
-    # await tt_dxfeed.subscribe_time_series(
-    #    "MSFT", from_time=1677628800000, to_time=1683331200000
-    # )
+
     while system_running:
         if len(task_list) > 0:
             for task in task_list:

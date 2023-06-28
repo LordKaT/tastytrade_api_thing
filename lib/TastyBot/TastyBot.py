@@ -27,13 +27,6 @@ class TastyBot(commands.Bot):
         self.alert_message_header += "  Status    Symbol  IVR Change  Liquidity\n"
         self.alert_message_footer = "```"
 
-        # print(f"Waiting... ", end="", flush=True)
-        # now = datetime.now()
-        # while now.minute % 5 != 0 or now.second != 0:
-        #    now = datetime.now()
-        # now = datetime.now().strftime("%H:%M:%S")
-        # print(f"Ready {now}", flush=True)
-
         intents = discord.Intents.default()
         intents.message_content = True
 
