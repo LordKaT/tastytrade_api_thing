@@ -118,6 +118,21 @@ class TTApi:
         self.streamer_websocket_uri = f'{response["data"]["websocket-url"]}/cometd'
         self.streamer_level = response["data"]["level"]
 
+        print(self.streamer_uri)
+
+        return True
+
+    def get_quote_tokens(self) -> bool:
+        response = self.__get("/api-quote-tokens")
+
+        if response is None:
+            return False
+
+        self.streamer_token = response["data"]["token"]
+        self.streamer_websocket_uri = f'{response["data"]["dxlink-url"]}'
+
+        print(self.streamer_websocket_uri)
+
         return True
 
     def logout(self) -> bool:

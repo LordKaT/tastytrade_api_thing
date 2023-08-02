@@ -31,18 +31,19 @@ class TTWebsocket:
         self.socket.close()
 
     def on_message(self, ws, message):
-        print(f"wss get {message}")
+        pass
+        # print(f"wss get {message}")
 
     def on_error(self, ws, error):
-        print(f"wss error {error}")
+        # print(f"wss error {error}")
         self.active = False
 
     def on_close(self, ws, status_code, message):
-        print(f"wss close {status_code} {message}")
+        # print(f"wss close {status_code} {message}")
         self.active = False
 
     def on_open(self, ws):
-        print(f"wss open")
+        # print(f"wss open")
         self.active = True
         self.heartbeat_thread = threading.Thread(target=self.heartbeat)
         self.heartbeat_thread.start()

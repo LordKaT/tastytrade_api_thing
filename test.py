@@ -25,6 +25,8 @@ print("Fetch dxFeed token")
 if not ttapi.fetch_dxfeed_token():
     exit()
 
+exit()
+
 # print("Market Metrics")
 # print(ttapi.market_metrics(["SPY", "AAPL", "/MES"]))
 
