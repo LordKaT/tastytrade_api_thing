@@ -26,10 +26,6 @@ print("Get quote tokens")
 if not ttapi.get_quote_tokens():
     exit()
 
-# print("Get Options Chain")
-# print(ttapi.option_chains("PYPL"))
-# exit()
-
 print("Websocket")
 tt_websocket = TTWebsocket(uri=ttapi.tt_wss, auth_token=ttapi.session_token)
 tt_websocket.connect()
